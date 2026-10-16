@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { 
   BarChart3, 
   Building2, 
@@ -35,7 +35,13 @@ import {
   MoreVertical,
   ChevronLeft,
   ArrowUpDown,
-  Info
+  Info,
+  GripVertical,
+  ChevronDown,
+  ChevronUp,
+  ShieldCheck,
+  Check,
+  ArrowRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -127,78 +133,116 @@ const Badge = ({ status }: { status: string }) => {
 const Modal = ({ 
   isOpen, 
   onClose, 
+  onSave,
   title, 
   children, 
   errorMessage,
-  actionLabel = "Salvar Registro"
+  actionLabel = "Salvar Registro",
+  maxWidth
 }: { 
   isOpen: boolean, 
   onClose: () => void, 
+  onSave?: () => void,
   title: string, 
   children: React.ReactNode, 
   errorMessage?: string | null,
-  actionLabel?: string
-}) => (
-  <AnimatePresence>
-    {isOpen && (
-      <>
-        <motion.div 
-          initial={{ opacity: 0 }} 
-          animate={{ opacity: 1 }} 
-          exit={{ opacity: 0 }}
-          onClick={onClose}
-          className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
-        />
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95, y: 20 }} 
-          animate={{ opacity: 1, scale: 1, y: 0 }} 
-          exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="fixed inset-x-4 top-4 bottom-4 md:inset-auto md:top-auto md:bottom-auto md:max-w-4xl w-full bg-white rounded-2xl shadow-2xl z-[101] flex flex-col overflow-hidden"
-        >
-          <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-            <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-              <Plus className="text-blue-600" />
-              {title}
-            </h2>
-            <button onClick={onClose} className="p-2 hover:bg-slate-200 rounded-full transition-colors">
-              <X size={20} />
-            </button>
-          </div>
-          <div className="p-8 overflow-y-auto flex-grow bg-white">
-            {errorMessage && (
-              <motion.div 
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                className="mb-6 p-4 bg-red-50 border border-red-100 rounded-xl flex gap-3 text-red-700 text-sm"
-              >
-                <AlertCircle className="shrink-0" size={20} />
-                <div className="font-medium text-red-800">{errorMessage}</div>
-              </motion.div>
-            )}
-            {children}
-          </div>
-          <div className="p-6 border-t border-slate-100 flex justify-end gap-3 bg-slate-50/50">
-            <button onClick={onClose} className="px-6 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold hover:bg-slate-100 transition-colors">
-              Cancelar
-            </button>
-            {actionLabel !== "none" && (
+  actionLabel?: string,
+  maxWidth?: string
+}) => {
+  const isDeleteModal = actionLabel?.toLowerCase().includes('excluir') || title.toLowerCase().includes('excluir') || title.toLowerCase().includes('confirmar exclusão');
+  const isSmallForm = title.toLowerCase().includes('município') || title.toLowerCase().includes('tipo de órgão');
+  const computedMaxWidth = maxWidth || (isDeleteModal ? "max-w-md" : isSmallForm ? "max-w-xl" : "max-w-4xl");
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+          {/* Backdrop overlay */}
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm"
+          />
+
+          {/* Centered Modal Card */}
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95, y: 15 }} 
+            animate={{ opacity: 1, scale: 1, y: 0 }} 
+            exit={{ opacity: 0, scale: 0.95, y: 15 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            onClick={(e) => e.stopPropagation()}
+            className={`relative z-10 w-full ${computedMaxWidth} max-h-[90vh] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden my-auto border border-slate-100`}
+          >
+            {/* Modal Header */}
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 shrink-0">
+              <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                {isDeleteModal ? (
+                  <Trash2 className="text-rose-600 shrink-0" size={22} />
+                ) : title.toLowerCase().includes('editar') ? (
+                  <Edit2 className="text-amber-600 shrink-0" size={20} />
+                ) : title.toLowerCase().includes('detalhes') ? (
+                  <Layers className="text-blue-600 shrink-0" size={22} />
+                ) : (
+                  <Plus className="text-blue-600 shrink-0" size={22} />
+                )}
+                {title}
+              </h2>
               <button 
-                onClick={(children as any).props?.onSave || onClose} 
-                className={`px-8 py-2.5 rounded-xl text-white text-sm font-bold transition-shadow shadow-lg ${
-                  actionLabel.includes('Excluir') 
-                    ? 'bg-rose-600 hover:bg-rose-700 shadow-rose-500/20' 
-                    : 'bg-blue-600 hover:bg-blue-700 shadow-blue-500/20'
-                }`}
+                type="button"
+                onClick={onClose} 
+                className="p-2 hover:bg-slate-200 text-slate-500 hover:text-slate-700 rounded-full transition-colors"
+                title="Fechar"
               >
-                {actionLabel}
+                <X size={20} />
               </button>
-            )}
-          </div>
-        </motion.div>
-      </>
-    )}
-  </AnimatePresence>
-);
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-8 overflow-y-auto flex-grow bg-white">
+              {errorMessage && (
+                <motion.div 
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  className="mb-6 p-4 bg-red-50 border border-red-100 rounded-xl flex gap-3 text-red-700 text-sm"
+                >
+                  <AlertCircle className="shrink-0" size={20} />
+                  <div className="font-medium text-red-800">{errorMessage}</div>
+                </motion.div>
+              )}
+              {children}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-6 border-t border-slate-100 flex justify-end gap-3 bg-slate-50/50 shrink-0">
+              <button 
+                type="button"
+                onClick={onClose} 
+                className="px-6 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold hover:bg-slate-100 transition-colors text-slate-700"
+              >
+                Cancelar
+              </button>
+              {actionLabel !== "none" && (
+                <button 
+                  type="button"
+                  onClick={onSave || onClose} 
+                  className={`px-8 py-2.5 rounded-xl text-white text-sm font-bold transition-all shadow-lg active:scale-95 ${
+                    isDeleteModal 
+                      ? 'bg-rose-600 hover:bg-rose-700 shadow-rose-500/20' 
+                      : 'bg-blue-600 hover:bg-blue-700 shadow-blue-500/20'
+                  }`}
+                >
+                  {actionLabel}
+                </button>
+              )}
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
+};
 
 // --- Main App Component ---
 
@@ -222,6 +266,19 @@ export default function App() {
     { id: '5', descricao: 'Secretaria de Desenvolvimento Econômico', sigla: 'SEDEC', tipo: 'Entidades', sequencia: '40' },
     { id: '6', descricao: 'Secretaria da Educação', sigla: 'SED', tipo: 'Centrais', sequencia: '50' },
     { id: '7', descricao: 'Secretaria da Segurança Pública', sigla: 'SSP', tipo: 'Centrais', sequencia: '60' },
+    { id: '8', descricao: 'Secretaria de Estado da Fazenda', sigla: 'SEF', tipo: 'Centrais', sequencia: '70' },
+    { id: '9', descricao: 'Secretaria de Estado da Administração', sigla: 'SEA', tipo: 'Centrais', sequencia: '80' },
+    { id: '10', descricao: 'Secretaria da Agricultura e Pecuária', sigla: 'SAR', tipo: 'Centrais', sequencia: '90' },
+    { id: '11', descricao: 'Secretaria de Infraestrutura e Mobilidade', sigla: 'SIE', tipo: 'Centrais', sequencia: '100' },
+    { id: '12', descricao: 'Polícia Militar de Santa Catarina', sigla: 'PMSC', tipo: 'Entidades', sequencia: '110' },
+    { id: '13', descricao: 'Corpo de Bombeiros Militar de Santa Catarina', sigla: 'CBMSC', tipo: 'Entidades', sequencia: '120' },
+    { id: '14', descricao: 'Polícia Civil do Estado de Santa Catarina', sigla: 'PCSC', tipo: 'Entidades', sequencia: '130' },
+    { id: '15', descricao: 'Departamento Estadual de Trânsito', sigla: 'DETRAN', tipo: 'Entidades', sequencia: '140' },
+    { id: '16', descricao: 'Instituto de Previdência de Santa Catarina', sigla: 'IPREV', tipo: 'Entidades', sequencia: '150' },
+    { id: '17', descricao: 'Empresa de Pesquisa Agropecuária de SC', sigla: 'EPAGRI', tipo: 'Entidades', sequencia: '160' },
+    { id: '18', descricao: 'Companhia Integrada de Desenv. Agrícola', sigla: 'CIDASC', tipo: 'Entidades', sequencia: '170' },
+    { id: '19', descricao: 'Companhia Catarinense de Águas e Saneamento', sigla: 'CASAN', tipo: 'Entidades', sequencia: '180' },
+    { id: '20', descricao: 'Centrais Elétricas de Santa Catarina', sigla: 'CELESC', tipo: 'Entidades', sequencia: '190' },
   ]);
 
   // Global Entities State
@@ -248,14 +305,55 @@ export default function App() {
     { id: 'a6', descricao: 'Jurídico Contencioso', sigla: 'JC', idOrgao: '3' },
     { id: 'a7', descricao: 'Gabinete', sigla: 'GAB', idOrgao: '4' },
     { id: 'a8', descricao: 'Inovação', sigla: 'INOV', idOrgao: '5' },
+    { id: 'a9', descricao: 'Educação Básica', sigla: 'EB', idOrgao: '6' },
+    { id: 'a10', descricao: 'Operações Integradas', sigla: 'OI', idOrgao: '7' },
+    { id: 'a11', descricao: 'Arrecadação e Tributação', sigla: 'ATRIB', idOrgao: '8' },
+    { id: 'a12', descricao: 'Recursos Humanos do Estado', sigla: 'DGRH', idOrgao: '9' },
+    { id: 'a13', descricao: 'Defesa Agropecuária', sigla: 'DEFAGRO', idOrgao: '10' },
+    { id: 'a14', descricao: 'Obras Viárias', sigla: 'OV', idOrgao: '11' },
+    { id: 'a15', descricao: 'Comando Geral', sigla: 'CMDO', idOrgao: '12' },
+    { id: 'a16', descricao: 'Operações de Resgate', sigla: 'RESG', idOrgao: '13' },
+    { id: 'a17', descricao: 'Investigações Criminais', sigla: 'DIC', idOrgao: '14' },
+    { id: 'a18', descricao: 'Habilitação e Veículos', sigla: 'HAB', idOrgao: '15' },
+    { id: 'a19', descricao: 'Concessão de Benefícios', sigla: 'BENEF', idOrgao: '16' },
+    { id: 'a20', descricao: 'Pesquisa Aplicada', sigla: 'PESQ', idOrgao: '17' },
+    { id: 'a21', descricao: 'Inspeção Animal', sigla: 'INSP', idOrgao: '18' },
+    { id: 'a22', descricao: 'Tratamento de Água', sigla: 'ETA', idOrgao: '19' },
+    { id: 'a23', descricao: 'Distribuição Elétrica', sigla: 'DIST', idOrgao: '20' },
   ]);
 
   const [cargosList, setCargosList] = useState<Cargo[]>([
     { id: 'c1', descricao: 'Diretor', sigla: 'DIR', idArea: 'a1', gestor: true },
     { id: 'c2', descricao: 'Gerente', sigla: 'GER', idArea: 'a1', gestor: true },
     { id: 'c3', descricao: 'Assessor Técnico', sigla: 'AT', idArea: 'a2', gestor: false },
-    { id: 'c4', descricao: 'Coordenador', sigla: 'COORD', idArea: 'a4', gestor: true },
+    { id: 'c4', descricao: 'Assessor Técnico', sigla: 'AT', idArea: 'a3', gestor: false },
+    { id: 'c5', descricao: 'Gerente', sigla: 'GER', idArea: 'a4', gestor: true },
+    { id: 'c6', descricao: 'Coordenador', sigla: 'COORD', idArea: 'a4', gestor: true },
+    { id: 'c7', descricao: 'Analista de Planejamento', sigla: 'AP', idArea: 'a5', gestor: false },
+    { id: 'c8', descricao: 'Coordenador', sigla: 'COORD', idArea: 'a6', gestor: true },
+    { id: 'c9', descricao: 'Assessor Jurídico', sigla: 'AJ', idArea: 'a6', gestor: false },
+    { id: 'c10', descricao: 'Gerente', sigla: 'GER', idArea: 'a7', gestor: true },
+    { id: 'c11', descricao: 'Chefe de Gabinete', sigla: 'CG', idArea: 'a7', gestor: true },
+    { id: 'c12', descricao: 'Diretor de Inovação', sigla: 'DI', idArea: 'a8', gestor: true },
+    { id: 'c13', descricao: 'Assessor de Projetos', sigla: 'AP', idArea: 'a8', gestor: false },
+    { id: 'c14', descricao: 'Coordenador Pedagógico', sigla: 'CPED', idArea: 'a9', gestor: true },
+    { id: 'c15', descricao: 'Comandante de Operações', sigla: 'COPER', idArea: 'a10', gestor: true },
+    { id: 'c16', descricao: 'Auditor Fiscal', sigla: 'AFISC', idArea: 'a11', gestor: true },
+    { id: 'c17', descricao: 'Diretor de Gestão de Pessoas', sigla: 'DGP', idArea: 'a12', gestor: true },
+    { id: 'c18', descricao: 'Fiscal Agropecuário', sigla: 'FISC', idArea: 'a13', gestor: true },
+    { id: 'c19', descricao: 'Engenheiro Fiscal', sigla: 'EFISC', idArea: 'a14', gestor: true },
+    { id: 'c20', descricao: 'Oficial de Ligação', sigla: 'OLIG', idArea: 'a15', gestor: false },
+    { id: 'c21', descricao: 'Comandante de Batalhão', sigla: 'CBAT', idArea: 'a16', gestor: true },
+    { id: 'c22', descricao: 'Delegado Coordenador', sigla: 'DEL', idArea: 'a17', gestor: true },
+    { id: 'c23', descricao: 'Gerente de Renavam', sigla: 'GREN', idArea: 'a18', gestor: true },
+    { id: 'c24', descricao: 'Analista Previdenciário', sigla: 'APREV', idArea: 'a19', gestor: false },
+    { id: 'c25', descricao: 'Pesquisador Chefe', sigla: 'PCHEFE', idArea: 'a20', gestor: true },
+    { id: 'c26', descricao: 'Veterinário Fiscal', sigla: 'VFISC', idArea: 'a21', gestor: true },
+    { id: 'c27', descricao: 'Químico de Saneamento', sigla: 'QSAN', idArea: 'a22', gestor: false },
+    { id: 'c28', descricao: 'Engenheiro de Redes', sigla: 'ERED', idArea: 'a23', gestor: true },
   ]);
+
+  const [nominationsList, setNominationsList] = useState(NOMINATIONS);
 
   // Modal and Logic States for Structure Management
   const [isStructureModalOpen, setIsStructureModalOpen] = useState(false);
@@ -269,17 +367,33 @@ export default function App() {
   const [areaFormData, setAreaFormData] = useState<Area>({ id: '', descricao: '', sigla: '', idOrgao: '' });
   const [cargoFormData, setCargoFormData] = useState<Cargo>({ id: '', descricao: '', sigla: '', idArea: '', gestor: false });
   const [cargoSelectedOrganId, setCargoSelectedOrganId] = useState<string>('');
+  const [selectedOrganFilterArea, setSelectedOrganFilterArea] = useState<string>('');
+  const [selectedOrganFilterCargo, setSelectedOrganFilterCargo] = useState<string>('');
   const [areaToDelete, setAreaToDelete] = useState<Area | null>(null);
   const [cargoToDelete, setCargoToDelete] = useState<Cargo | null>(null);
   const [areaFormError, setAreaFormError] = useState<string | null>(null);
   const [cargoFormError, setCargoFormError] = useState<string | null>(null);
 
+  // Structure Drag and Drop State
+  const [draggedItem, setDraggedItem] = useState<
+    | { type: 'area'; areaId: string }
+    | { type: 'cargo'; cargoId: string; sourceAreaId: string }
+    | null
+  >(null);
+  const [dragOverArea, setDragOverArea] = useState<{ id: string; position: 'before' | 'after' } | null>(null);
+  const [dragOverCargo, setDragOverCargo] = useState<{ cargoId: string; areaId: string; position: 'before' | 'after' } | null>(null);
+  const [dragOverAreaContainerId, setDragOverAreaContainerId] = useState<string | null>(null);
+  const [structureToast, setStructureToast] = useState<{ message: string; timestamp: number } | null>(null);
+  const [structureSearchTerm, setStructureSearchTerm] = useState('');
+  const [collapsedAreaIds, setCollapsedAreaIds] = useState<Set<string>>(new Set());
+
   // Organ Management State
   const [organSearchTerm, setOrganSearchTerm] = useState('');
   const [selectedOrganIds, setSelectedOrganIds] = useState<Set<string>>(new Set());
   const [organPage, setOrganPage] = useState(1);
-  const [organItemsPerPage] = useState(5);
-  const [organSortField, setOrganSortField] = useState<'descricao' | 'sigla'>('descricao');
+  const [organItemsPerPage] = useState(15);
+  type OrganSortField = 'descricao' | 'sigla' | 'tipo' | 'areas' | 'cargos' | 'ocupados' | 'livres';
+  const [organSortField, setOrganSortField] = useState<OrganSortField>('descricao');
   const [organSortDir, setOrganSortDir] = useState<'asc' | 'desc'>('asc');
   
   // Tab Management
@@ -333,7 +447,7 @@ export default function App() {
   const [activeAdminTab, setActiveAdminTab] = useState<'areas' | 'cargos'>('areas');
 
   const checkActiveNomination = (reg: string, organ: string) => {
-    return NOMINATIONS.find(n => n.registration === reg && n.organ === organ && n.status !== 'Exonerado');
+    return nominationsList.find(n => n.registration === reg && n.organ === organ && n.status !== 'Exonerado');
   };
 
   const handleSaveNomination = () => {
@@ -348,8 +462,19 @@ export default function App() {
       return;
     }
 
-    // In a real app, we would dispatch an API call here.
-    console.log('Salvando nomeação:', formData);
+    const newNomination = {
+      id: String(Date.now()),
+      name: formData.name,
+      registration: formData.registration,
+      organ: formData.organ,
+      area: formData.area,
+      cargo: formData.cargo,
+      status: formData.status || 'Publicado',
+      date_doe: formData.dataDoe || new Date().toISOString().split('T')[0],
+      level: formData.level || 'I',
+    };
+
+    setNominationsList(prev => [newNomination, ...prev]);
     setIsNewModalOpen(false);
     setFormError(null);
   };
@@ -401,7 +526,7 @@ export default function App() {
     setIsOrganDetailsOpen(true);
   };
 
-  const toggleSort = (field: 'descricao' | 'sigla') => {
+  const toggleSort = (field: OrganSortField) => {
     if (organSortField === field) {
       setOrganSortDir(prev => prev === 'asc' ? 'desc' : 'asc');
     } else {
@@ -519,6 +644,319 @@ export default function App() {
     setCargoFormError(null);
   };
 
+  const showStructureNotice = (message: string) => {
+    setStructureToast({ message, timestamp: Date.now() });
+  };
+
+  React.useEffect(() => {
+    if (structureToast) {
+      const timer = setTimeout(() => {
+        setStructureToast(null);
+      }, 3500);
+      return () => clearTimeout(timer);
+    }
+  }, [structureToast]);
+
+  const toggleAreaCollapse = (areaId: string) => {
+    setCollapsedAreaIds(prev => {
+      const next = new Set(prev);
+      if (next.has(areaId)) next.delete(areaId);
+      else next.add(areaId);
+      return next;
+    });
+  };
+
+  // Drag and drop handlers for Areas
+  const handleAreaDragStart = (e: React.DragEvent, areaId: string) => {
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'area', areaId }));
+    setDraggedItem({ type: 'area', areaId });
+  };
+
+  const handleAreaDragOver = (e: React.DragEvent, areaId: string) => {
+    if (!draggedItem || draggedItem.type !== 'area' || draggedItem.areaId === areaId) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'move';
+    
+    const rect = e.currentTarget.getBoundingClientRect();
+    const relY = e.clientY - rect.top;
+    const position = relY < rect.height / 2 ? 'before' : 'after';
+    
+    if (!dragOverArea || dragOverArea.id !== areaId || dragOverArea.position !== position) {
+      setDragOverArea({ id: areaId, position });
+    }
+  };
+
+  const handleAreaDragLeave = (e: React.DragEvent, areaId: string) => {
+    if (dragOverArea?.id === areaId) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      if (
+        e.clientX < rect.left || 
+        e.clientX > rect.right || 
+        e.clientY < rect.top || 
+        e.clientY > rect.bottom
+      ) {
+        setDragOverArea(null);
+      }
+    }
+  };
+
+  const handleAreaDrop = (e: React.DragEvent, targetAreaId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!draggedItem || draggedItem.type !== 'area') return;
+    const sourceAreaId = draggedItem.areaId;
+    if (sourceAreaId === targetAreaId) {
+      setDraggedItem(null);
+      setDragOverArea(null);
+      return;
+    }
+    
+    const currentOrganId = selectedStructureOrgan?.id;
+    if (!currentOrganId) return;
+
+    const organAreas = areasList.filter(a => a.idOrgao === currentOrganId);
+    const sourceIdx = organAreas.findIndex(a => a.id === sourceAreaId);
+    const targetIdx = organAreas.findIndex(a => a.id === targetAreaId);
+    
+    if (sourceIdx === -1 || targetIdx === -1) {
+      setDraggedItem(null);
+      setDragOverArea(null);
+      return;
+    }
+    
+    const pos = dragOverArea?.position || 'after';
+    const reordered = [...organAreas];
+    const [movedArea] = reordered.splice(sourceIdx, 1);
+    let newTargetIdx = reordered.findIndex(a => a.id === targetAreaId);
+    if (pos === 'after') {
+      newTargetIdx += 1;
+    }
+    reordered.splice(newTargetIdx, 0, movedArea);
+
+    let organIndex = 0;
+    const updatedAreasList = areasList.map(a => {
+      if (a.idOrgao === currentOrganId) {
+        const item = reordered[organIndex];
+        organIndex++;
+        return item;
+      }
+      return a;
+    });
+    
+    setAreasList(updatedAreasList);
+    
+    const linkedCargosCount = cargosList.filter(c => c.idArea === movedArea.id).length;
+    showStructureNotice(
+      `Área "${movedArea.descricao}" movida com sucesso! (${linkedCargosCount} ${linkedCargosCount === 1 ? 'cargo vinculado acompanhou' : 'cargos vinculados acompanharam'})`
+    );
+    
+    setDraggedItem(null);
+    setDragOverArea(null);
+  };
+
+  // Drag and drop handlers for Cargos
+  const handleCargoDragStart = (e: React.DragEvent, cargoId: string, areaId: string) => {
+    e.stopPropagation();
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'cargo', cargoId, sourceAreaId: areaId }));
+    setDraggedItem({ type: 'cargo', cargoId, sourceAreaId: areaId });
+  };
+
+  const handleCargoDragOver = (e: React.DragEvent, cargoId: string, areaId: string) => {
+    if (!draggedItem || draggedItem.type !== 'cargo' || draggedItem.cargoId === cargoId) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'move';
+    
+    const rect = e.currentTarget.getBoundingClientRect();
+    const relY = e.clientY - rect.top;
+    const position = relY < rect.height / 2 ? 'before' : 'after';
+    
+    if (!dragOverCargo || dragOverCargo.cargoId !== cargoId || dragOverCargo.position !== position) {
+      setDragOverCargo({ cargoId, areaId, position });
+    }
+  };
+
+  const handleCargoDragLeave = (e: React.DragEvent, cargoId: string) => {
+    if (dragOverCargo?.cargoId === cargoId) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      if (
+        e.clientX < rect.left || 
+        e.clientX > rect.right || 
+        e.clientY < rect.top || 
+        e.clientY > rect.bottom
+      ) {
+        setDragOverCargo(null);
+      }
+    }
+  };
+
+  const handleCargoDropOnCargo = (e: React.DragEvent, targetCargoId: string, targetAreaId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!draggedItem || draggedItem.type !== 'cargo') return;
+    const { cargoId: sourceCargoId, sourceAreaId } = draggedItem;
+    if (sourceCargoId === targetCargoId) {
+      setDraggedItem(null);
+      setDragOverCargo(null);
+      return;
+    }
+    
+    const sourceCargo = cargosList.find(c => c.id === sourceCargoId);
+    const targetCargo = cargosList.find(c => c.id === targetCargoId);
+    if (!sourceCargo || !targetCargo) {
+      setDraggedItem(null);
+      setDragOverCargo(null);
+      return;
+    }
+    
+    const pos = dragOverCargo?.position || 'after';
+    const updatedCargo: Cargo = {
+      ...sourceCargo,
+      idArea: targetAreaId,
+      idOrgao: selectedStructureOrgan?.id || sourceCargo.idOrgao
+    };
+
+    const remaining = cargosList.filter(c => c.id !== sourceCargoId);
+    const targetIdx = remaining.findIndex(c => c.id === targetCargoId);
+    const insertIdx = pos === 'after' ? targetIdx + 1 : targetIdx;
+    
+    remaining.splice(insertIdx, 0, updatedCargo);
+    setCargosList(remaining);
+    
+    const targetArea = areasList.find(a => a.id === targetAreaId);
+    const sourceArea = areasList.find(a => a.id === sourceAreaId);
+    
+    if (sourceAreaId === targetAreaId) {
+      showStructureNotice(`Ordem do cargo "${sourceCargo.descricao}" atualizada em "${targetArea?.descricao || ''}"!`);
+    } else {
+      showStructureNotice(`Cargo "${sourceCargo.descricao}" transferido de "${sourceArea?.descricao || 'Área anterior'}" para "${targetArea?.descricao || 'Nova Área'}"!`);
+    }
+    
+    setDraggedItem(null);
+    setDragOverCargo(null);
+    setDragOverAreaContainerId(null);
+  };
+
+  const handleCargoDropOnArea = (e: React.DragEvent, targetAreaId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!draggedItem || draggedItem.type !== 'cargo') return;
+    const { cargoId: sourceCargoId, sourceAreaId } = draggedItem;
+    
+    const sourceCargo = cargosList.find(c => c.id === sourceCargoId);
+    if (!sourceCargo) {
+      setDraggedItem(null);
+      setDragOverAreaContainerId(null);
+      return;
+    }
+
+    if (sourceAreaId === targetAreaId) {
+      setDraggedItem(null);
+      setDragOverAreaContainerId(null);
+      return;
+    }
+
+    const updatedCargo: Cargo = {
+      ...sourceCargo,
+      idArea: targetAreaId,
+      idOrgao: selectedStructureOrgan?.id || sourceCargo.idOrgao
+    };
+
+    const remaining = cargosList.filter(c => c.id !== sourceCargoId);
+    let lastTargetCargoIdx = -1;
+    for (let i = remaining.length - 1; i >= 0; i--) {
+      if (remaining[i].idArea === targetAreaId) {
+        lastTargetCargoIdx = i;
+        break;
+      }
+    }
+    
+    if (lastTargetCargoIdx !== -1) {
+      remaining.splice(lastTargetCargoIdx + 1, 0, updatedCargo);
+    } else {
+      remaining.push(updatedCargo);
+    }
+
+    setCargosList(remaining);
+    const targetArea = areasList.find(a => a.id === targetAreaId);
+    const sourceArea = areasList.find(a => a.id === sourceAreaId);
+    showStructureNotice(`Cargo "${sourceCargo.descricao}" transferido de "${sourceArea?.descricao || 'Área anterior'}" para "${targetArea?.descricao || 'Nova Área'}"!`);
+
+    setDraggedItem(null);
+    setDragOverAreaContainerId(null);
+    setDragOverCargo(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedItem(null);
+    setDragOverArea(null);
+    setDragOverCargo(null);
+    setDragOverAreaContainerId(null);
+  };
+
+  const getOrganStats = useCallback((organ: Organ) => {
+    const organAreas = areasList.filter(a => a.idOrgao === organ.id);
+    const organAreaIds = new Set(organAreas.map(a => a.id));
+    const organCargos = cargosList.filter(c => organAreaIds.has(c.idArea) || c.idOrgao === organ.id);
+
+    // Active nominations for this organ
+    const organNominations = nominationsList.filter(n => {
+      if (n.status === 'Exonerado') return false;
+      const matchSigla = n.organ === organ.sigla || 
+                         n.organ.startsWith(organ.sigla + ' ') || 
+                         n.organ.startsWith(organ.sigla + ' -');
+      const matchDesc = n.organ === organ.descricao || 
+                        organ.descricao.toLowerCase().includes(n.organ.toLowerCase()) ||
+                        n.organ.toLowerCase().includes(organ.descricao.toLowerCase());
+      const matchId = (n as any).organId === organ.id;
+      return matchSigla || matchDesc || matchId;
+    });
+
+    const remainingNominations = [...organNominations];
+    let occupiedCount = 0;
+
+    for (const cargo of organCargos) {
+      const cargoArea = organAreas.find(a => a.id === cargo.idArea);
+      
+      let matchIdx = remainingNominations.findIndex(n => {
+        const matchCargo = n.cargo.trim().toLowerCase() === cargo.descricao.trim().toLowerCase();
+        const matchArea = cargoArea && n.area && n.area.trim().toLowerCase() === cargoArea.descricao.trim().toLowerCase();
+        return matchCargo && matchArea;
+      });
+
+      if (matchIdx === -1) {
+        matchIdx = remainingNominations.findIndex(n => {
+          return n.cargo.trim().toLowerCase() === cargo.descricao.trim().toLowerCase();
+        });
+      }
+
+      if (matchIdx !== -1) {
+        occupiedCount++;
+        remainingNominations.splice(matchIdx, 1);
+      }
+    }
+
+    if (remainingNominations.length > 0 && occupiedCount < organCargos.length) {
+      const extra = Math.min(remainingNominations.length, organCargos.length - occupiedCount);
+      occupiedCount += extra;
+    }
+
+    const freeCount = Math.max(0, organCargos.length - occupiedCount);
+
+    return {
+      areas: organAreas.length,
+      cargos: organCargos.length,
+      ocupados: occupiedCount,
+      livres: freeCount
+    };
+  }, [areasList, cargosList, nominationsList]);
+
   const sortedAndPaginatedOrgans = useMemo(() => {
     const filtered = organsList.filter(o => 
       o.descricao.toLowerCase().includes(organSearchTerm.toLowerCase()) || 
@@ -526,16 +964,30 @@ export default function App() {
     );
 
     const sorted = [...filtered].sort((a, b) => {
-      const valA = a[organSortField].toLowerCase();
-      const valB = b[organSortField].toLowerCase();
-      if (valA < valB) return organSortDir === 'asc' ? -1 : 1;
-      if (valA > valB) return organSortDir === 'asc' ? 1 : -1;
-      return 0;
+      if (organSortField === 'descricao' || organSortField === 'sigla') {
+        const valA = (a[organSortField] || '').toLowerCase();
+        const valB = (b[organSortField] || '').toLowerCase();
+        if (valA < valB) return organSortDir === 'asc' ? -1 : 1;
+        if (valA > valB) return organSortDir === 'asc' ? 1 : -1;
+        return 0;
+      } else if (organSortField === 'tipo') {
+        const valA = (a.tipo || '').toLowerCase();
+        const valB = (b.tipo || '').toLowerCase();
+        if (valA < valB) return organSortDir === 'asc' ? -1 : 1;
+        if (valA > valB) return organSortDir === 'asc' ? 1 : -1;
+        return 0;
+      } else {
+        const statsA = getOrganStats(a);
+        const statsB = getOrganStats(b);
+        const valA = statsA[organSortField];
+        const valB = statsB[organSortField];
+        return organSortDir === 'asc' ? valA - valB : valB - valA;
+      }
     });
 
     const start = (organPage - 1) * organItemsPerPage;
     return sorted.slice(start, start + organItemsPerPage);
-  }, [organsList, organSortField, organSortDir, organPage, organItemsPerPage, organSearchTerm]);
+  }, [organsList, organSortField, organSortDir, organPage, organItemsPerPage, organSearchTerm, getOrganStats]);
 
   const totalFilteredOrgans = useMemo(() => {
     return organsList.filter(o => 
@@ -547,8 +999,11 @@ export default function App() {
   const totalOrganPages = Math.ceil(totalFilteredOrgans / organItemsPerPage);
 
   const filteredNominations = useMemo(() => {
-    return NOMINATIONS.filter(item => {
-      const matchOrgan = !filterOrgan || item.organ === filterOrgan;
+    return nominationsList.filter(item => {
+      const matchOrgan = !filterOrgan || 
+        item.organ === filterOrgan || 
+        item.organ.startsWith(filterOrgan + ' ') || 
+        item.organ.startsWith(filterOrgan + ' -');
       const matchArea = !filterArea || item.area === filterArea;
       const matchCargo = !filterCargo || item.cargo === filterCargo;
       const matchStatus = !filterStatus || item.status === filterStatus;
@@ -557,7 +1012,7 @@ export default function App() {
         item.registration.includes(filterSearch);
       return matchOrgan && matchArea && matchCargo && matchStatus && matchSearch;
     });
-  }, [filterOrgan, filterArea, filterCargo, filterStatus, filterSearch]);
+  }, [nominationsList, filterOrgan, filterArea, filterCargo, filterStatus, filterSearch]);
 
   const handleSearchHistory = () => {
     if (!historySearchTerm) return;
@@ -569,16 +1024,16 @@ export default function App() {
   };
 
   return (
-    <div className="flex h-screen w-full bg-[#F8FAFC]">
-      {/* Sidebar */}
-      <aside className="w-64 bg-[#0F172A] text-[#94A3B8] flex flex-col shrink-0 border-r border-[#1E293B]">
-        <div className="p-6 flex items-center gap-3 text-[#F8FAFC] font-bold text-xl tracking-tight">
+    <div className="flex h-screen w-full bg-[#F8FAFC] overflow-hidden">
+      {/* Sidebar - fixed and pinned, never scrolls with screen content */}
+      <aside className="w-64 bg-[#0F172A] text-[#94A3B8] flex flex-col shrink-0 h-full border-r border-[#1E293B] select-none z-20">
+        <div className="p-6 flex items-center gap-3 text-[#F8FAFC] font-bold text-xl tracking-tight shrink-0">
           <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center text-sm font-black">S</div>
           <span>SGN Admin</span>
           <span className="text-[10px] bg-blue-600 px-1.5 py-0.5 rounded ml-auto">v1.0</span>
         </div>
 
-        <nav className="flex-grow mt-2">
+        <nav className="flex-grow mt-2 overflow-y-auto px-1">
           {NAV_ITEMS.map((item) => (
             <button
               key={item.id}
@@ -595,13 +1050,13 @@ export default function App() {
           ))}
         </nav>
 
-        <div className="p-6 text-xs opacity-50 border-t border-[#1E293B]">
+        <div className="p-6 text-xs opacity-50 border-t border-[#1E293B] shrink-0">
           Tenant: Administração Central
         </div>
       </aside>
 
-      {/* Main Content */}
-      <main className="flex-grow flex flex-col min-w-0">
+      {/* Main Content Area */}
+      <main className="flex-grow flex flex-col min-w-0 h-full overflow-hidden">
         <header className="h-16 bg-white border-b border-[#E2E8F0] flex items-center justify-between px-6 shrink-0 z-10">
           <div className="flex items-center gap-2">
             <span className="text-[#64748B] text-sm flex items-center gap-1">
@@ -638,7 +1093,8 @@ export default function App() {
           </div>
         </header>
 
-        <div className="p-6 overflow-y-auto flex-grow bg-slate-50/30">
+        {/* Scrollable content container for all screens */}
+        <div className="p-6 overflow-y-auto flex-grow min-h-0 bg-slate-50/30">
           {activeTab === 'dashboard' && (
             <div className="space-y-6">
               <motion.div 
@@ -811,66 +1267,153 @@ export default function App() {
                             <ArrowUpDown size={12} className={organSortField === 'sigla' ? 'text-blue-600' : 'text-slate-300'} />
                           </div>
                         </th>
-                        <th className="px-6 py-4">Tipo</th>
-                        <th className="px-6 py-4">Sequência</th>
+                        <th 
+                          className="px-5 py-4 cursor-pointer hover:text-blue-600 transition-colors"
+                          onClick={() => toggleSort('tipo')}
+                        >
+                          <div className="flex items-center gap-2">
+                            Tipo
+                            <ArrowUpDown size={12} className={organSortField === 'tipo' ? 'text-blue-600' : 'text-slate-300'} />
+                          </div>
+                        </th>
+                        <th 
+                          className="px-4 py-4 text-center cursor-pointer hover:text-blue-600 transition-colors"
+                          onClick={() => toggleSort('areas')}
+                        >
+                          <div className="flex items-center justify-center gap-1.5">
+                            Áreas
+                            <ArrowUpDown size={12} className={organSortField === 'areas' ? 'text-blue-600' : 'text-slate-300'} />
+                          </div>
+                        </th>
+                        <th 
+                          className="px-4 py-4 text-center cursor-pointer hover:text-blue-600 transition-colors"
+                          onClick={() => toggleSort('cargos')}
+                        >
+                          <div className="flex items-center justify-center gap-1.5">
+                            Cargos
+                            <ArrowUpDown size={12} className={organSortField === 'cargos' ? 'text-blue-600' : 'text-slate-300'} />
+                          </div>
+                        </th>
+                        <th 
+                          className="px-4 py-4 text-center cursor-pointer hover:text-blue-600 transition-colors"
+                          onClick={() => toggleSort('ocupados')}
+                        >
+                          <div className="flex items-center justify-center gap-1.5">
+                            Cargos Ocupados
+                            <ArrowUpDown size={12} className={organSortField === 'ocupados' ? 'text-blue-600' : 'text-slate-300'} />
+                          </div>
+                        </th>
+                        <th 
+                          className="px-4 py-4 text-center cursor-pointer hover:text-blue-600 transition-colors"
+                          onClick={() => toggleSort('livres')}
+                        >
+                          <div className="flex items-center justify-center gap-1.5">
+                            Cargos Livres
+                            <ArrowUpDown size={12} className={organSortField === 'livres' ? 'text-blue-600' : 'text-slate-300'} />
+                          </div>
+                        </th>
                         <th className="px-6 py-4 text-center">Ações</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                      {sortedAndPaginatedOrgans.length > 0 ? sortedAndPaginatedOrgans.map(o => (
-                        <tr key={o.id} className={`hover:bg-slate-50/80 transition-colors group ${selectedOrganIds.has(o.id) ? 'bg-blue-50/50' : ''}`}>
-                          <td className="px-6 py-4">
-                            <input 
-                              type="checkbox" 
-                              className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                              checked={selectedOrganIds.has(o.id)}
-                              onChange={() => toggleSelectOrgan(o.id)}
-                            />
-                          </td>
-                          <td className="px-6 py-4 font-semibold text-slate-900 group-hover:text-blue-600 transition-colors">{o.descricao}</td>
-                          <td className="px-6 py-4 text-slate-600 font-mono font-bold uppercase">{o.sigla}</td>
-                          <td className="px-6 py-4">
-                            <span className="bg-slate-100 text-slate-600 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase border border-slate-200">
-                              {o.tipo}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 text-slate-500 font-mono text-center w-24">{o.sequencia.padStart(2, '0')}</td>
-                          <td className="px-6 py-4 text-center">
-                            <div className="flex items-center justify-center gap-2">
-                              <button 
-                                onClick={() => handleOpenStructure(o)}
-                                title="Gestão de Estrutura"
-                                className="p-2 hover:bg-white rounded-lg text-slate-400 hover:text-blue-600 border border-transparent hover:border-blue-100 transition-all shadow-sm"
+                      {sortedAndPaginatedOrgans.length > 0 ? sortedAndPaginatedOrgans.map(o => {
+                        const stats = getOrganStats(o);
+                        return (
+                          <tr key={o.id} className={`hover:bg-slate-50/80 transition-colors group ${selectedOrganIds.has(o.id) ? 'bg-blue-50/50' : ''}`}>
+                            <td className="px-6 py-4">
+                              <input 
+                                type="checkbox" 
+                                className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                checked={selectedOrganIds.has(o.id)}
+                                onChange={() => toggleSelectOrgan(o.id)}
+                              />
+                            </td>
+                            <td className="px-6 py-4 font-semibold text-slate-900 group-hover:text-blue-600 transition-colors">{o.descricao}</td>
+                            <td className="px-6 py-4 text-slate-600 font-mono font-bold uppercase">{o.sigla}</td>
+                            <td className="px-6 py-4">
+                              <span className="bg-slate-100 text-slate-600 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase border border-slate-200">
+                                {o.tipo}
+                              </span>
+                            </td>
+                            <td className="px-4 py-4 text-center">
+                              <span 
+                                title={`${stats.areas} ${stats.areas === 1 ? 'área vinculada' : 'áreas vinculadas'}`}
+                                className="inline-flex items-center justify-center min-w-[28px] px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200"
                               >
-                                <Layers size={16} />
-                              </button>
-                              <button 
-                                onClick={() => handleOpenDetails(o)}
-                                title="Detalhes"
-                                className="p-2 hover:bg-white rounded-lg text-slate-400 hover:text-blue-600 border border-transparent hover:border-blue-100 transition-all shadow-sm group/btn"
+                                {stats.areas}
+                              </span>
+                            </td>
+                            <td className="px-4 py-4 text-center">
+                              <span 
+                                title={`${stats.cargos} ${stats.cargos === 1 ? 'cargo vinculado' : 'cargos vinculados'}`}
+                                className="inline-flex items-center justify-center min-w-[28px] px-2.5 py-1 rounded-lg text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200"
                               >
-                                <Info size={16} />
-                              </button>
-                              <button 
-                                onClick={() => handleEditOrgan(o)}
-                                title="Editar"
-                                className="p-2 hover:bg-white rounded-lg text-slate-400 hover:text-amber-600 border border-transparent hover:border-amber-100 transition-all shadow-sm"
+                                {stats.cargos}
+                              </span>
+                            </td>
+                            <td className="px-4 py-4 text-center">
+                              <span 
+                                title={`${stats.ocupados} ${stats.ocupados === 1 ? 'cargo ocupado (com nomeação)' : 'cargos ocupados (com nomeação)'}`}
+                                className={`inline-flex items-center justify-center gap-1.5 min-w-[28px] px-2.5 py-1 rounded-lg text-xs font-bold ${
+                                  stats.ocupados > 0 
+                                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+                                    : 'bg-slate-50 text-slate-400 border border-slate-200'
+                                }`}
                               >
-                                <Edit2 size={16} />
-                              </button>
-                              <button 
-                                onClick={() => handleOpenDeleteConfirm(o)}
-                                title="Excluir"
-                                className="p-2 hover:bg-white rounded-lg text-slate-400 hover:text-rose-600 border border-transparent hover:border-rose-100 transition-all shadow-sm"
+                                <span className={`w-1.5 h-1.5 rounded-full ${stats.ocupados > 0 ? 'bg-emerald-500' : 'bg-slate-300'}`}></span>
+                                {stats.ocupados}
+                              </span>
+                            </td>
+                            <td className="px-4 py-4 text-center">
+                              <span 
+                                title={`${stats.livres} ${stats.livres === 1 ? 'cargo livre (sem nomeação)' : 'cargos livres (sem nomeação)'}`}
+                                className={`inline-flex items-center justify-center gap-1.5 min-w-[28px] px-2.5 py-1 rounded-lg text-xs font-bold ${
+                                  stats.livres > 0 
+                                    ? 'bg-sky-50 text-sky-700 border border-sky-200' 
+                                    : 'bg-slate-50 text-slate-400 border border-slate-200'
+                                }`}
                               >
-                                <Trash2 size={16} />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      )) : (
+                                <span className={`w-1.5 h-1.5 rounded-full ${stats.livres > 0 ? 'bg-sky-500' : 'bg-slate-300'}`}></span>
+                                {stats.livres}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-center">
+                              <div className="flex items-center justify-center gap-2">
+                                <button 
+                                  onClick={() => handleOpenStructure(o)}
+                                  title="Gestão de Estrutura"
+                                  className="p-2 hover:bg-white rounded-lg text-slate-400 hover:text-blue-600 border border-transparent hover:border-blue-100 transition-all shadow-sm"
+                                >
+                                  <Layers size={16} />
+                                </button>
+                                <button 
+                                  onClick={() => handleOpenDetails(o)}
+                                  title="Detalhes"
+                                  className="p-2 hover:bg-white rounded-lg text-slate-400 hover:text-blue-600 border border-transparent hover:border-blue-100 transition-all shadow-sm group/btn"
+                                >
+                                  <Info size={16} />
+                                </button>
+                                <button 
+                                  onClick={() => handleEditOrgan(o)}
+                                  title="Editar"
+                                  className="p-2 hover:bg-white rounded-lg text-slate-400 hover:text-amber-600 border border-transparent hover:border-amber-100 transition-all shadow-sm"
+                                >
+                                  <Edit2 size={16} />
+                                </button>
+                                <button 
+                                  onClick={() => handleOpenDeleteConfirm(o)}
+                                  title="Excluir"
+                                  className="p-2 hover:bg-white rounded-lg text-slate-400 hover:text-rose-600 border border-transparent hover:border-rose-100 transition-all shadow-sm"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      }) : (
                         <tr>
-                          <td colSpan={5} className="px-6 py-12 text-center text-slate-400">
+                          <td colSpan={9} className="px-6 py-12 text-center text-slate-400">
                             Nenhum órgão encontrado.
                           </td>
                         </tr>
@@ -882,12 +1425,13 @@ export default function App() {
                 {/* Pagination Controls */}
                 <div className="p-4 bg-slate-50 border-t border-[#E2E8F0] flex justify-between items-center shrink-0">
                   <div className="text-[11px] text-slate-500 font-medium">
-                    Mostrando <span className="font-bold text-slate-900">{sortedAndPaginatedOrgans.length}</span> de <span className="font-bold text-slate-900">{organsList.length}</span> órgãos
+                    Mostrando <span className="font-bold text-slate-900">{sortedAndPaginatedOrgans.length}</span> de <span className="font-bold text-slate-900">{totalFilteredOrgans}</span> órgãos <span className="text-slate-400 font-normal">(15 órgãos por página)</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <button 
                       onClick={() => setOrganPage(prev => Math.max(1, prev - 1))}
                       disabled={organPage === 1}
+                      title="Página anterior"
                       className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                     >
                       <ChevronLeft size={16} />
@@ -909,7 +1453,8 @@ export default function App() {
                     </div>
                     <button 
                       onClick={() => setOrganPage(prev => Math.min(totalOrganPages, prev + 1))}
-                      disabled={organPage === totalOrganPages}
+                      disabled={organPage === totalOrganPages || totalOrganPages === 0}
+                      title="Próxima página"
                       className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                     >
                       <ChevronRight size={16} />
@@ -1037,16 +1582,59 @@ export default function App() {
 
               {activeAdminTab === 'areas' && (
                  <div className="bg-white border border-[#E2E8F0] rounded-xl shadow-sm overflow-hidden">
-                    <div className="p-5 border-b border-[#E2E8F0] flex justify-between items-center">
-                      <h3 className="font-bold text-slate-900">Gestão de Áreas</h3>
+                    <div className="p-5 border-b border-[#E2E8F0] flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                        <div>
+                          <h3 className="font-bold text-slate-900">Gestão de Áreas</h3>
+                          <p className="text-xs text-slate-500">
+                            {selectedOrganFilterArea ? (
+                              <span>
+                                Filtrando por <strong>{organsList.find(o => o.id === selectedOrganFilterArea)?.sigla}</strong> ({areasList.filter(a => a.idOrgao === selectedOrganFilterArea).length} {areasList.filter(a => a.idOrgao === selectedOrganFilterArea).length === 1 ? 'área' : 'áreas'})
+                              </span>
+                            ) : (
+                              <span>Total de {areasList.length} áreas cadastradas</span>
+                            )}
+                          </p>
+                        </div>
+                        
+                        <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 transition-all">
+                          <Building2 size={16} className="text-slate-400 shrink-0" />
+                          <label htmlFor="organ-area-filter" className="text-xs font-semibold text-slate-600 whitespace-nowrap">
+                            Órgão:
+                          </label>
+                          <select 
+                            id="organ-area-filter"
+                            value={selectedOrganFilterArea}
+                            onChange={(e) => setSelectedOrganFilterArea(e.target.value)}
+                            className="bg-transparent text-xs font-semibold text-slate-800 outline-none cursor-pointer max-w-[220px] sm:max-w-xs truncate"
+                          >
+                            <option value="">Todos os Órgãos ({organsList.length})</option>
+                            {organsList.map(o => (
+                              <option key={o.id} value={o.id}>
+                                {o.sigla} - {o.descricao}
+                              </option>
+                            ))}
+                          </select>
+                          {selectedOrganFilterArea && (
+                            <button 
+                              onClick={() => setSelectedOrganFilterArea('')}
+                              className="text-[11px] text-blue-600 hover:text-blue-800 font-bold ml-1 hover:underline whitespace-nowrap"
+                              title="Limpar filtro de órgão"
+                            >
+                              Limpar
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
                       <button 
                         onClick={() => {
                           setSelectedStructureOrgan(null);
-                          setAreaFormData({ id: '', descricao: '', sigla: '', idOrgao: '' });
+                          setAreaFormData({ id: '', descricao: '', sigla: '', idOrgao: selectedOrganFilterArea || '' });
                           setAreaFormError(null);
                           setIsNewAreaModalOpen(true);
                         }}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 shadow-sm"
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 shadow-sm whitespace-nowrap self-start sm:self-auto"
                       >
                         <Plus size={14} /> Nova Área
                       </button>
@@ -1060,29 +1648,63 @@ export default function App() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
-                        {areasList.map(area => {
-                          const organ = organsList.find(o => o.id === area.idOrgao);
-                          return (
-                            <tr key={area.id} className="hover:bg-slate-50">
-                              <td className="px-6 py-4 font-semibold text-slate-900">{area.descricao}</td>
-                              <td className="px-6 py-4 text-slate-500">{organ ? organ.descricao : 'Não vinculado'}</td>
-                              <td className="px-6 py-4 text-right">
-                                <button 
-                                  onClick={() => { 
-                                    setSelectedStructureOrgan(null);
-                                    setAreaFormData(area); 
-                                    setAreaFormError(null); 
-                                    setIsNewAreaModalOpen(true); 
-                                  }} 
-                                  className="text-blue-600 hover:text-blue-800 font-bold text-xs"
-                                >
-                                  Editar
-                                </button>
-                                <button onClick={() => { setAreaToDelete(area); setIsConfirmDeleteAreaOpen(true); }} className="text-rose-600 hover:text-rose-800 font-bold text-xs ml-3">Excluir</button>
-                              </td>
-                            </tr>
-                          );
-                        })}
+                        {areasList
+                          .filter(area => !selectedOrganFilterArea || area.idOrgao === selectedOrganFilterArea)
+                          .map(area => {
+                            const organ = organsList.find(o => o.id === area.idOrgao);
+                            return (
+                              <tr key={area.id} className="hover:bg-slate-50 transition-colors">
+                                <td className="px-6 py-4">
+                                  <div className="font-semibold text-slate-900">{area.descricao}</div>
+                                  <span className="text-[10px] font-mono uppercase bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">{area.sigla}</span>
+                                </td>
+                                <td className="px-6 py-4">
+                                  {organ ? (
+                                    <div>
+                                      <span className="font-bold text-slate-800 text-xs">{organ.sigla}</span>
+                                      <span className="text-xs text-slate-500 block truncate max-w-sm">{organ.descricao}</span>
+                                    </div>
+                                  ) : (
+                                    <span className="text-slate-400 italic text-xs">Não vinculado</span>
+                                  )}
+                                </td>
+                                <td className="px-6 py-4 text-right">
+                                  <button 
+                                    onClick={() => { 
+                                      setSelectedStructureOrgan(null);
+                                      setAreaFormData(area); 
+                                      setAreaFormError(null); 
+                                      setIsNewAreaModalOpen(true); 
+                                    }} 
+                                    className="text-blue-600 hover:text-blue-800 font-bold text-xs"
+                                  >
+                                    Editar
+                                  </button>
+                                  <button onClick={() => { setAreaToDelete(area); setIsConfirmDeleteAreaOpen(true); }} className="text-rose-600 hover:text-rose-800 font-bold text-xs ml-3">Excluir</button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        {areasList.filter(area => !selectedOrganFilterArea || area.idOrgao === selectedOrganFilterArea).length === 0 && (
+                          <tr>
+                            <td colSpan={3} className="px-6 py-12 text-center text-slate-400">
+                              <Layers size={36} className="mx-auto mb-2 opacity-30 text-slate-400" />
+                              <p className="font-semibold text-slate-700 text-sm">Nenhuma área encontrada para este órgão.</p>
+                              <p className="text-xs text-slate-400 mt-1">Cadastre uma nova área vinculada ao órgão selecionado.</p>
+                              <button
+                                onClick={() => {
+                                  setSelectedStructureOrgan(null);
+                                  setAreaFormData({ id: '', descricao: '', sigla: '', idOrgao: selectedOrganFilterArea || '' });
+                                  setAreaFormError(null);
+                                  setIsNewAreaModalOpen(true);
+                                }}
+                                className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-colors"
+                              >
+                                <Plus size={13} /> Cadastrar Nova Área
+                              </button>
+                            </td>
+                          </tr>
+                        )}
                       </tbody>
                     </table>
                  </div>
@@ -1090,17 +1712,60 @@ export default function App() {
 
               {activeAdminTab === 'cargos' && (
                  <div className="bg-white border border-[#E2E8F0] rounded-xl shadow-sm overflow-hidden">
-                    <div className="p-5 border-b border-[#E2E8F0] flex justify-between items-center">
-                      <h3 className="font-bold text-slate-900">Gestão de Cargos</h3>
+                    <div className="p-5 border-b border-[#E2E8F0] flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                        <div>
+                          <h3 className="font-bold text-slate-900">Gestão de Cargos</h3>
+                          <p className="text-xs text-slate-500">
+                            {selectedOrganFilterCargo ? (
+                              <span>
+                                Filtrando por <strong>{organsList.find(o => o.id === selectedOrganFilterCargo)?.sigla}</strong>
+                              </span>
+                            ) : (
+                              <span>Total de {cargosList.length} cargos cadastrados</span>
+                            )}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 transition-all">
+                          <Building2 size={16} className="text-slate-400 shrink-0" />
+                          <label htmlFor="organ-cargo-filter" className="text-xs font-semibold text-slate-600 whitespace-nowrap">
+                            Órgão:
+                          </label>
+                          <select 
+                            id="organ-cargo-filter"
+                            value={selectedOrganFilterCargo}
+                            onChange={(e) => setSelectedOrganFilterCargo(e.target.value)}
+                            className="bg-transparent text-xs font-semibold text-slate-800 outline-none cursor-pointer max-w-[220px] sm:max-w-xs truncate"
+                          >
+                            <option value="">Todos os Órgãos ({organsList.length})</option>
+                            {organsList.map(o => (
+                              <option key={o.id} value={o.id}>
+                                {o.sigla} - {o.descricao}
+                              </option>
+                            ))}
+                          </select>
+                          {selectedOrganFilterCargo && (
+                            <button 
+                              onClick={() => setSelectedOrganFilterCargo('')}
+                              className="text-[11px] text-blue-600 hover:text-blue-800 font-bold ml-1 hover:underline whitespace-nowrap"
+                              title="Limpar filtro de órgão"
+                            >
+                              Limpar
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
                       <button 
                         onClick={() => {
                           setSelectedStructureOrgan(null);
-                          setCargoSelectedOrganId('');
+                          setCargoSelectedOrganId(selectedOrganFilterCargo || '');
                           setCargoFormData({ id: '', descricao: '', sigla: '', idArea: '', gestor: false });
                           setCargoFormError(null);
                           setIsNewCargoModalOpen(true);
                         }}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 shadow-sm"
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 shadow-sm whitespace-nowrap self-start sm:self-auto"
                       >
                         <Plus size={14} /> Novo Cargo
                       </button>
@@ -1115,52 +1780,85 @@ export default function App() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
-                        {cargosList.map(cargo => {
-                          const area = areasList.find(a => a.id === cargo.idArea);
-                          const organ = organsList.find(o => o.id === (area?.idOrgao || cargo.idOrgao));
-                          return (
-                            <tr key={cargo.id} className="hover:bg-slate-50">
-                              <td className="px-6 py-4 font-semibold text-slate-900">
-                                <div className="flex items-center gap-2">
-                                  <span>{cargo.descricao}</span>
-                                  <span className="text-[10px] font-mono uppercase bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">{cargo.sigla}</span>
-                                  {cargo.gestor && (
-                                    <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">Chefia</span>
+                        {cargosList
+                          .filter(cargo => {
+                            if (!selectedOrganFilterCargo) return true;
+                            const area = areasList.find(a => a.id === cargo.idArea);
+                            const organId = area?.idOrgao || cargo.idOrgao;
+                            return organId === selectedOrganFilterCargo;
+                          })
+                          .map(cargo => {
+                            const area = areasList.find(a => a.id === cargo.idArea);
+                            const organ = organsList.find(o => o.id === (area?.idOrgao || cargo.idOrgao));
+                            return (
+                              <tr key={cargo.id} className="hover:bg-slate-50 transition-colors">
+                                <td className="px-6 py-4 font-semibold text-slate-900">
+                                  <div className="flex items-center gap-2">
+                                    <span>{cargo.descricao}</span>
+                                    <span className="text-[10px] font-mono uppercase bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">{cargo.sigla}</span>
+                                    {cargo.gestor && (
+                                      <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">Chefia</span>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4 text-slate-600 font-medium">
+                                  {organ ? (
+                                    <span>
+                                      <span className="font-bold text-slate-800 text-xs">{organ.sigla}</span>
+                                      <span className="text-xs text-slate-400 block truncate max-w-xs">{organ.descricao}</span>
+                                    </span>
+                                  ) : (
+                                    <span className="text-slate-400 italic text-xs">Não vinculado</span>
                                   )}
-                                </div>
-                              </td>
-                              <td className="px-6 py-4 text-slate-600 font-medium">
-                                {organ ? (
-                                  <span>
-                                    <span className="font-bold text-slate-800">{organ.sigla}</span>
-                                    <span className="text-xs text-slate-400 block truncate max-w-xs">{organ.descricao}</span>
-                                  </span>
-                                ) : (
-                                  <span className="text-slate-400 italic">Não vinculado</span>
-                                )}
-                              </td>
-                              <td className="px-6 py-4 text-slate-500 italic">
-                                {area ? `${area.descricao} (${area.sigla})` : 'Sem área'}
-                              </td>
-                              <td className="px-6 py-4 text-right">
-                                <button 
-                                  onClick={() => { 
-                                    setSelectedStructureOrgan(null);
-                                    const linkedArea = areasList.find(a => a.id === cargo.idArea);
-                                    setCargoSelectedOrganId(linkedArea?.idOrgao || cargo.idOrgao || '');
-                                    setCargoFormData(cargo); 
-                                    setCargoFormError(null); 
-                                    setIsNewCargoModalOpen(true); 
-                                  }} 
-                                  className="text-blue-600 hover:text-blue-800 font-bold text-xs"
-                                >
-                                  Editar
-                                </button>
-                                <button onClick={() => { setCargoToDelete(cargo); setIsConfirmDeleteCargoOpen(true); }} className="text-rose-600 hover:text-rose-800 font-bold text-xs ml-3">Excluir</button>
-                              </td>
-                            </tr>
-                          );
-                        })}
+                                </td>
+                                <td className="px-6 py-4 text-slate-500 italic text-xs">
+                                  {area ? `${area.descricao} (${area.sigla})` : 'Sem área'}
+                                </td>
+                                <td className="px-6 py-4 text-right">
+                                  <button 
+                                    onClick={() => { 
+                                      setSelectedStructureOrgan(null);
+                                      const linkedArea = areasList.find(a => a.id === cargo.idArea);
+                                      setCargoSelectedOrganId(linkedArea?.idOrgao || cargo.idOrgao || '');
+                                      setCargoFormData(cargo); 
+                                      setCargoFormError(null); 
+                                      setIsNewCargoModalOpen(true); 
+                                    }} 
+                                    className="text-blue-600 hover:text-blue-800 font-bold text-xs"
+                                  >
+                                    Editar
+                                  </button>
+                                  <button onClick={() => { setCargoToDelete(cargo); setIsConfirmDeleteCargoOpen(true); }} className="text-rose-600 hover:text-rose-800 font-bold text-xs ml-3">Excluir</button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        {cargosList.filter(cargo => {
+                          if (!selectedOrganFilterCargo) return true;
+                          const area = areasList.find(a => a.id === cargo.idArea);
+                          const organId = area?.idOrgao || cargo.idOrgao;
+                          return organId === selectedOrganFilterCargo;
+                        }).length === 0 && (
+                          <tr>
+                            <td colSpan={4} className="px-6 py-12 text-center text-slate-400">
+                              <Briefcase size={36} className="mx-auto mb-2 opacity-30 text-slate-400" />
+                              <p className="font-semibold text-slate-700 text-sm">Nenhum cargo encontrado para este órgão.</p>
+                              <p className="text-xs text-slate-400 mt-1">Cadastre um novo cargo vinculado às áreas deste órgão.</p>
+                              <button
+                                onClick={() => {
+                                  setSelectedStructureOrgan(null);
+                                  setCargoSelectedOrganId(selectedOrganFilterCargo || '');
+                                  setCargoFormData({ id: '', descricao: '', sigla: '', idArea: '', gestor: false });
+                                  setCargoFormError(null);
+                                  setIsNewCargoModalOpen(true);
+                                }}
+                                className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-colors"
+                              >
+                                <Plus size={13} /> Cadastrar Novo Cargo
+                              </button>
+                            </td>
+                          </tr>
+                        )}
                       </tbody>
                     </table>
                  </div>
@@ -1432,8 +2130,14 @@ export default function App() {
       </main>
 
       {/* Nomination Modal */}
-      <Modal isOpen={isNewModalOpen} onClose={() => { setIsNewModalOpen(false); setFormError(null); }} title="Nova Nomeação de Servidor" errorMessage={formError}>
-        <form className="space-y-8" onSubmit={(e) => e.preventDefault()} onSave={handleSaveNomination}>
+      <Modal 
+        isOpen={isNewModalOpen} 
+        onClose={() => { setIsNewModalOpen(false); setFormError(null); }} 
+        onSave={handleSaveNomination}
+        title="Nova Nomeação de Servidor" 
+        errorMessage={formError}
+      >
+        <form className="space-y-8" onSubmit={(e) => { e.preventDefault(); handleSaveNomination(); }}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Seção Dados Básicos */}
             <div className="space-y-6">
@@ -1681,10 +2385,11 @@ export default function App() {
       <Modal 
         isOpen={isNewMunicipioModalOpen} 
         onClose={() => setIsNewMunicipioModalOpen(false)} 
+        onSave={handleSaveMunicipio}
         title={municipioFormData.id ? "Editar Município" : "Novo Município"}
         errorMessage={municipioFormError}
       >
-        <form className="space-y-6" onSubmit={(e) => e.preventDefault()} onSave={handleSaveMunicipio}>
+        <form className="space-y-6" onSubmit={(e) => { e.preventDefault(); handleSaveMunicipio(); }}>
           <div className="space-y-1.5">
             <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Descrição *</label>
             <input 
@@ -1702,10 +2407,11 @@ export default function App() {
       <Modal 
         isOpen={isConfirmDeleteMunicipioOpen} 
         onClose={() => setIsConfirmDeleteMunicipioOpen(false)} 
+        onSave={() => { setMunicipiosList(prev => prev.filter(m => m.id !== municipioToDelete?.id)); setIsConfirmDeleteMunicipioOpen(false); }}
         title="Excluir Município"
         actionLabel="Excluir Município"
       >
-        <div className="text-center space-y-4" onSave={() => { setMunicipiosList(prev => prev.filter(m => m.id !== municipioToDelete?.id)); setIsConfirmDeleteMunicipioOpen(false); }}>
+        <div className="text-center space-y-4">
           <div className="w-16 h-16 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mx-auto border border-rose-100"><Trash2 size={32} /></div>
           <p className="text-sm text-slate-600">Deseja realmente excluir o município <span className="font-bold text-slate-900">"{municipioToDelete?.descricao}"</span>?</p>
         </div>
@@ -1715,10 +2421,11 @@ export default function App() {
       <Modal 
         isOpen={isNewTipoOrgaoModalOpen} 
         onClose={() => setIsNewTipoOrgaoModalOpen(false)} 
+        onSave={handleSaveTipoOrgao}
         title={tipoOrgaoFormData.id ? "Editar Tipo de Órgão" : "Novo Tipo de Órgão"}
         errorMessage={tipoOrgaoFormError}
       >
-        <form className="space-y-6" onSubmit={(e) => e.preventDefault()} onSave={handleSaveTipoOrgao}>
+        <form className="space-y-6" onSubmit={(e) => { e.preventDefault(); handleSaveTipoOrgao(); }}>
           <div className="space-y-1.5">
             <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Descrição do Tipo *</label>
             <input 
@@ -1736,94 +2443,493 @@ export default function App() {
       <Modal 
         isOpen={isConfirmDeleteTipoOrgaoOpen} 
         onClose={() => setIsConfirmDeleteTipoOrgaoOpen(false)} 
+        onSave={() => { setTiposOrgaoList(prev => prev.filter(t => t.id !== tipoOrgaoToDelete?.id)); setIsConfirmDeleteTipoOrgaoOpen(false); }}
         title="Excluir Tipo de Órgão"
         actionLabel="Excluir Tipo"
       >
-        <div className="text-center space-y-4" onSave={() => { setTiposOrgaoList(prev => prev.filter(t => t.id !== tipoOrgaoToDelete?.id)); setIsConfirmDeleteTipoOrgaoOpen(false); }}>
+        <div className="text-center space-y-4">
           <div className="w-16 h-16 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mx-auto border border-rose-100"><Trash2 size={32} /></div>
           <p className="text-sm text-slate-600">Deseja realmente excluir o tipo de órgão <span className="font-bold text-slate-900">"{tipoOrgaoToDelete?.descricao}"</span>?</p>
         </div>
       </Modal>
 
       {/* Structure Management Modal */}
-      <Modal isOpen={isStructureModalOpen} onClose={() => setIsStructureModalOpen(false)} title={`Estrutura de Unidades - ${selectedStructureOrgan?.descricao}`} actionLabel="none">
-        <div className="space-y-6">
-          <div className="flex justify-between items-center bg-slate-50 p-4 rounded-xl border border-slate-100">
-             <div>
-               <h4 className="font-bold text-slate-900">Áreas e Departamentos</h4>
-               <p className="text-xs text-slate-500">Configure a hierarquia interna deste órgão.</p>
-             </div>
-             <button 
-               onClick={() => { setAreaFormData({ id: '', descricao: '', sigla: '', idOrgao: selectedStructureOrgan?.id || '' }); setIsNewAreaModalOpen(true); }}
-               className="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5"
-             >
-               <Plus size={14} /> Nova Área
-             </button>
+      <Modal 
+        isOpen={isStructureModalOpen} 
+        onClose={() => {
+          setIsStructureModalOpen(false);
+          setStructureSearchTerm('');
+          handleDragEnd();
+        }} 
+        title={`Estrutura de Unidades - ${selectedStructureOrgan?.sigla || ''} (${selectedStructureOrgan?.descricao || ''})`} 
+        actionLabel="none"
+        maxWidth="max-w-5xl"
+      >
+        <div className="space-y-5">
+          {/* Real-time Auto-Save Toast Alert */}
+          <AnimatePresence>
+            {structureToast && (
+              <motion.div 
+                initial={{ opacity: 0, y: -10, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -10, scale: 0.98 }}
+                className="sticky top-0 z-30 flex items-center justify-between gap-3 px-4 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl shadow-lg shadow-emerald-600/20"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                    <Check size={14} className="text-white" />
+                  </div>
+                  <span className="text-xs font-semibold">{structureToast.message}</span>
+                </div>
+                <span className="text-[10px] font-bold uppercase tracking-wider bg-white/20 px-2.5 py-0.5 rounded-full text-white/95 shrink-0">
+                  Salvo automaticamente
+                </span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Organ Overview Summary Bar */}
+          <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-sm shadow-md shadow-blue-500/20 shrink-0">
+                {selectedStructureOrgan?.sigla || 'ORG'}
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="font-bold text-slate-900 text-base">{selectedStructureOrgan?.descricao}</h3>
+                  <span className="bg-slate-200 text-slate-700 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">
+                    {selectedStructureOrgan?.tipo}
+                  </span>
+                </div>
+                <div className="flex items-center gap-3 mt-1 text-xs text-slate-500 flex-wrap">
+                  <span className="flex items-center gap-1">
+                    <Layers size={13} className="text-blue-500" />
+                    <strong>{areasList.filter(a => a.idOrgao === selectedStructureOrgan?.id).length}</strong> Áreas vinculadas
+                  </span>
+                  <span>•</span>
+                  <span className="flex items-center gap-1">
+                    <Briefcase size={13} className="text-blue-500" />
+                    <strong>{cargosList.filter(c => areasList.filter(a => a.idOrgao === selectedStructureOrgan?.id).some(a => a.id === c.idArea)).length}</strong> Cargos totais
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <button 
+                type="button"
+                onClick={() => { 
+                  setAreaFormData({ id: '', descricao: '', sigla: '', idOrgao: selectedStructureOrgan?.id || '' }); 
+                  setAreaFormError(null);
+                  setIsNewAreaModalOpen(true); 
+                }}
+                className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 shadow-md shadow-blue-500/20 transition-all cursor-pointer"
+              >
+                <Plus size={15} /> Nova Área
+              </button>
+            </div>
           </div>
 
+          {/* Explanatory banner */}
+          <div className="bg-blue-50/70 border border-blue-100 rounded-xl px-4 py-3 flex items-start gap-3 text-blue-900 text-xs">
+            <Info size={16} className="text-blue-600 shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <p className="font-semibold text-blue-950">Movimentação Hierárquica por Drag and Drop:</p>
+              <p className="text-blue-800 leading-relaxed text-[11px]">
+                • <strong>Reordenar Áreas:</strong> Clique e arraste pela alça (<strong>⋮⋮</strong>) para reorganizar a ordem das Áreas. <span className="font-semibold text-blue-950 underline decoration-blue-300">Todos os cargos vinculados acompanham a Área na nova posição</span>.
+                <br />
+                • <strong>Movimentar Cargos:</strong> Arraste um Cargo para reordenar dentro da mesma Área ou solte em outra Área para transferi-lo. As novas vinculações e ordens são salvas imediatamente.
+              </p>
+            </div>
+          </div>
+
+          {/* Quick Filter Search within Modal */}
+          {areasList.filter(a => a.idOrgao === selectedStructureOrgan?.id).length > 0 && (
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input 
+                  type="text" 
+                  placeholder="Pesquisar áreas ou cargos nesta estrutura..."
+                  value={structureSearchTerm}
+                  onChange={(e) => setStructureSearchTerm(e.target.value)}
+                  className="w-full pl-9 pr-8 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-400 focus:bg-white transition-all text-slate-800"
+                />
+                {structureSearchTerm && (
+                  <button 
+                    onClick={() => setStructureSearchTerm('')} 
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs font-bold"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+              <button 
+                type="button"
+                onClick={() => {
+                  const organAreas = areasList.filter(a => a.idOrgao === selectedStructureOrgan?.id);
+                  if (collapsedAreaIds.size === organAreas.length) {
+                    setCollapsedAreaIds(new Set());
+                  } else {
+                    setCollapsedAreaIds(new Set(organAreas.map(a => a.id)));
+                  }
+                }}
+                className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-semibold transition-colors shrink-0"
+              >
+                {collapsedAreaIds.size === areasList.filter(a => a.idOrgao === selectedStructureOrgan?.id).length ? 'Expandir Todas' : 'Recolher Todas'}
+              </button>
+            </div>
+          )}
+
+          {/* Hierarchical Area and Cargo List with Drag and Drop */}
           <div className="space-y-4">
-             {areasList.filter(a => a.idOrgao === selectedStructureOrgan?.id).map(area => (
-                <div key={area.id} className="border border-slate-100 rounded-xl overflow-hidden shadow-sm">
-                   <div className="bg-slate-50 p-3 flex justify-between items-center border-b border-slate-100">
-                      <div className="flex items-center gap-2">
-                        <Layers size={14} className="text-blue-500" />
-                        <span className="font-bold text-slate-900 text-sm">{area.descricao} ({area.sigla})</span>
+            {(() => {
+              const currentOrganId = selectedStructureOrgan?.id;
+              const organAreas = areasList.filter(a => a.idOrgao === currentOrganId);
+              const filteredAreas = organAreas.filter(area => {
+                if (!structureSearchTerm) return true;
+                const term = structureSearchTerm.toLowerCase();
+                const matchArea = area.descricao.toLowerCase().includes(term) || area.sigla.toLowerCase().includes(term);
+                const matchCargo = cargosList.some(c => c.idArea === area.id && (c.descricao.toLowerCase().includes(term) || c.sigla.toLowerCase().includes(term)));
+                return matchArea || matchCargo;
+              });
+
+              if (organAreas.length === 0) {
+                return (
+                  <div className="py-16 text-center border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50/50">
+                    <div className="w-16 h-16 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto mb-3 shadow-xs">
+                      <Layers size={32} />
+                    </div>
+                    <h4 className="font-bold text-slate-800 text-base">Nenhuma área cadastrada neste órgão</h4>
+                    <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-4">
+                      Para começar a organizar a hierarquia deste órgão, cadastre a primeira área de atuação.
+                    </p>
+                    <button 
+                      type="button"
+                      onClick={() => { 
+                        setAreaFormData({ id: '', descricao: '', sigla: '', idOrgao: selectedStructureOrgan?.id || '' }); 
+                        setAreaFormError(null);
+                        setIsNewAreaModalOpen(true); 
+                      }}
+                      className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white px-5 py-2.5 rounded-xl text-xs font-bold inline-flex items-center gap-2 shadow-md shadow-blue-500/20 transition-all cursor-pointer"
+                    >
+                      <Plus size={15} /> Cadastrar Primeira Área
+                    </button>
+                  </div>
+                );
+              }
+
+              if (filteredAreas.length === 0) {
+                return (
+                  <div className="py-12 text-center text-slate-400 bg-slate-50 rounded-2xl border border-slate-200">
+                    <Search size={32} className="mx-auto mb-2 opacity-30" />
+                    <p className="font-semibold text-sm text-slate-600">Nenhum resultado encontrado</p>
+                    <p className="text-xs">Não encontramos áreas ou cargos com o termo "{structureSearchTerm}".</p>
+                  </div>
+                );
+              }
+
+              return filteredAreas.map((area) => {
+                const areaCargos = cargosList.filter(c => c.idArea === area.id);
+                const isDraggingArea = draggedItem?.type === 'area' && draggedItem.areaId === area.id;
+                const isCollapsed = collapsedAreaIds.has(area.id);
+                const areaSeq = organAreas.findIndex(a => a.id === area.id) + 1;
+
+                return (
+                  <div key={area.id} className="relative">
+                    {/* Area Drop Indicator (Before) */}
+                    {dragOverArea?.id === area.id && dragOverArea?.position === 'before' && (
+                      <div className="flex items-center gap-2 py-1.5 animate-pulse">
+                        <div className="w-2.5 h-2.5 rounded-full bg-blue-600 shrink-0 shadow-sm" />
+                        <div className="h-1 bg-gradient-to-r from-blue-600 via-blue-400 to-transparent rounded-full flex-1 shadow-sm" />
+                        <span className="text-[10px] font-bold text-blue-600 uppercase bg-blue-50 px-2 py-0.5 rounded">Mover Área para cá</span>
                       </div>
-                      <div className="flex gap-2">
-                         <button onClick={() => { setAreaFormData(area); setIsNewAreaModalOpen(true); }} className="p-1 hover:bg-amber-100 text-amber-600 rounded transition-all"><Edit2 size={14} /></button>
-                         <button onClick={() => { setAreaToDelete(area); setIsConfirmDeleteAreaOpen(true); }} className="p-1 hover:bg-rose-100 text-rose-600 rounded transition-all"><Trash2 size={14} /></button>
-                         <button 
-                           onClick={() => { 
-                             setCargoSelectedOrganId(area.idOrgao || selectedStructureOrgan?.id || '');
-                             setCargoFormData({ id: '', descricao: '', sigla: '', idArea: area.id, gestor: false, idOrgao: area.idOrgao || selectedStructureOrgan?.id || '' }); 
-                             setCargoFormError(null);
-                             setIsNewCargoModalOpen(true); 
-                           }}
-                           className="bg-white border border-slate-200 text-slate-600 px-2 py-0.5 rounded text-[10px] font-bold hover:border-blue-300 hover:text-blue-600 transition-all flex items-center gap-1"
-                         >
-                           <Plus size={10} /> Adicionar Cargo
-                         </button>
+                    )}
+
+                    {/* Area Card */}
+                    <div 
+                      onDragOver={(e) => handleAreaDragOver(e, area.id)}
+                      onDragLeave={(e) => handleAreaDragLeave(e, area.id)}
+                      onDrop={(e) => handleAreaDrop(e, area.id)}
+                      className={`border rounded-2xl overflow-hidden transition-all duration-150 ${
+                        isDraggingArea 
+                          ? 'opacity-40 border-dashed border-2 border-blue-500 bg-blue-50/40 shadow-none' 
+                          : dragOverArea?.id === area.id
+                            ? 'border-blue-400 ring-2 ring-blue-400/30 bg-white shadow-md'
+                            : 'border-slate-200/90 bg-white shadow-xs hover:border-slate-300'
+                      }`}
+                    >
+                      {/* Area Header with Drag Handle */}
+                      <div className="bg-slate-50/90 p-3.5 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          {/* Drag handle for the Area */}
+                          <div 
+                            draggable
+                            onDragStart={(e) => handleAreaDragStart(e, area.id)}
+                            onDragEnd={handleDragEnd}
+                            title="Clique e arraste para reordenar esta Área (todos os cargos acompanham)"
+                            className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg cursor-grab active:cursor-grabbing transition-colors shrink-0"
+                          >
+                            <GripVertical size={16} />
+                          </div>
+
+                          {/* Sequence position */}
+                          <span className="w-6 h-6 rounded-lg bg-white border border-slate-200 text-slate-600 font-mono text-[11px] font-bold flex items-center justify-center shrink-0 shadow-2xs">
+                            #{areaSeq}
+                          </span>
+
+                          <div className="w-7 h-7 rounded-lg bg-blue-50 border border-blue-100 text-blue-600 flex items-center justify-center shrink-0">
+                            <Layers size={14} />
+                          </div>
+
+                          <div className="truncate">
+                            <span className="font-bold text-slate-900 text-sm">{area.descricao}</span>
+                            <span className="ml-2 font-mono text-[11px] text-blue-700 font-bold bg-blue-50 px-2 py-0.5 rounded border border-blue-200/60 uppercase">
+                              {area.sigla}
+                            </span>
+                          </div>
+
+                          <span className="text-[11px] font-medium text-slate-500 bg-white border border-slate-200 px-2.5 py-0.5 rounded-full shrink-0">
+                            {areaCargos.length} {areaCargos.length === 1 ? 'cargo vinculado' : 'cargos vinculados'}
+                          </span>
+                        </div>
+
+                        {/* Actions for Area */}
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button 
+                            type="button"
+                            onClick={() => { 
+                              setCargoSelectedOrganId(area.idOrgao || selectedStructureOrgan?.id || '');
+                              setCargoFormData({ id: '', descricao: '', sigla: '', idArea: area.id, gestor: false, idOrgao: area.idOrgao || selectedStructureOrgan?.id || '' }); 
+                              setCargoFormError(null);
+                              setIsNewCargoModalOpen(true); 
+                            }}
+                            className="bg-white border border-slate-200 hover:border-blue-400 text-slate-700 hover:text-blue-600 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                          >
+                            <Plus size={13} className="text-blue-600" /> Adicionar Cargo
+                          </button>
+                          <button 
+                            type="button"
+                            onClick={() => { setAreaFormData(area); setIsNewAreaModalOpen(true); }}
+                            title="Editar Área"
+                            className="p-1.5 hover:bg-amber-50 text-slate-400 hover:text-amber-600 rounded-lg transition-colors cursor-pointer"
+                          >
+                            <Edit2 size={14} />
+                          </button>
+                          <button 
+                            type="button"
+                            onClick={() => { setAreaToDelete(area); setIsConfirmDeleteAreaOpen(true); }}
+                            title="Excluir Área"
+                            className="p-1.5 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-lg transition-colors cursor-pointer"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                          <button 
+                            type="button"
+                            onClick={() => toggleAreaCollapse(area.id)}
+                            title={isCollapsed ? "Expandir cargos" : "Recolher cargos"}
+                            className="p-1.5 hover:bg-slate-200 text-slate-400 hover:text-slate-700 rounded-lg transition-colors cursor-pointer"
+                          >
+                            {isCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+                          </button>
+                        </div>
                       </div>
-                   </div>
-                   <div className="p-3 bg-white">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                         {cargosList.filter(c => c.idArea === area.id).map(cargo => (
-                            <div key={cargo.id} className="flex justify-between items-center p-2 rounded-lg bg-slate-50/50 border border-slate-50 group">
-                               <div className="flex items-center gap-2">
-                                  <div className={`w-1.5 h-1.5 rounded-full ${cargo.gestor ? 'bg-amber-500' : 'bg-blue-400'}`} />
-                                  <span className="text-xs font-semibold text-slate-700">{cargo.descricao}</span>
-                                  <span className="text-[9px] font-mono text-slate-400 uppercase">{cargo.sigla}</span>
-                               </div>
-                               <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
+
+                      {/* Area Body: Hierarchical tree branch of Cargos */}
+                      {!isCollapsed && (
+                        <div 
+                          onDragOver={(e) => {
+                            if (draggedItem?.type === 'cargo' && draggedItem.sourceAreaId !== area.id) {
+                              e.preventDefault();
+                              setDragOverAreaContainerId(area.id);
+                            }
+                          }}
+                          onDragLeave={() => {
+                            if (dragOverAreaContainerId === area.id) setDragOverAreaContainerId(null);
+                          }}
+                          onDrop={(e) => {
+                            if (draggedItem?.type === 'cargo') {
+                              handleCargoDropOnArea(e, area.id);
+                            }
+                          }}
+                          className={`p-4 transition-colors ${
+                            dragOverAreaContainerId === area.id 
+                              ? 'bg-blue-50/40 ring-2 ring-inset ring-blue-300' 
+                              : 'bg-white'
+                          }`}
+                        >
+                          <div className="border-l-2 border-slate-200 ml-3 pl-4 space-y-2.5">
+                            {areaCargos.map((cargo) => {
+                              const isDraggingCargo = draggedItem?.type === 'cargo' && draggedItem.cargoId === cargo.id;
+                              return (
+                                <div key={cargo.id} className="relative">
+                                  {/* Cargo Drop line before */}
+                                  {dragOverCargo?.cargoId === cargo.id && dragOverCargo?.position === 'before' && (
+                                    <div className="flex items-center gap-1.5 py-1">
+                                      <div className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-ping" />
+                                      <div className="h-0.5 bg-blue-500 rounded-full flex-1" />
+                                    </div>
+                                  )}
+
+                                  {/* Cargo Card */}
+                                  <div 
+                                    onDragOver={(e) => handleCargoDragOver(e, cargo.id, area.id)}
+                                    onDragLeave={(e) => handleCargoDragLeave(e, cargo.id)}
+                                    onDrop={(e) => handleCargoDropOnCargo(e, cargo.id, area.id)}
+                                    className={`flex items-center justify-between p-2.5 rounded-xl border transition-all duration-150 group/cargo ${
+                                      isDraggingCargo 
+                                        ? 'opacity-40 border-dashed border-blue-400 bg-blue-50'
+                                        : dragOverCargo?.cargoId === cargo.id
+                                          ? 'border-blue-400 bg-blue-50/50 shadow-xs ring-1 ring-blue-400'
+                                          : 'bg-slate-50/70 hover:bg-white border-slate-200/80 hover:border-slate-300 shadow-2xs'
+                                    }`}
+                                  >
+                                    <div className="flex items-center gap-2.5 min-w-0">
+                                      {/* Grip handle for Cargo */}
+                                      <div 
+                                        draggable
+                                        onDragStart={(e) => handleCargoDragStart(e, cargo.id, area.id)}
+                                        onDragEnd={handleDragEnd}
+                                        title="Clique e arraste para reordenar ou transferir para outra Área"
+                                        className="p-1 text-slate-300 group-hover/cargo:text-slate-600 hover:bg-slate-200/80 rounded-md cursor-grab active:cursor-grabbing transition-colors shrink-0"
+                                      >
+                                        <GripVertical size={14} />
+                                      </div>
+
+                                      {/* Tree connection indicator node */}
+                                      <div className="w-2 h-2 rounded-full bg-slate-300 group-hover/cargo:bg-blue-500 shrink-0 transition-colors" />
+
+                                      {/* Gestor / Operacional tag */}
+                                      {cargo.gestor ? (
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200 shrink-0">
+                                          <ShieldCheck size={11} className="text-amber-600" /> Chefia / Gestão
+                                        </span>
+                                      ) : (
+                                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200 shrink-0">
+                                          Operacional
+                                        </span>
+                                      )}
+
+                                      {/* Description & Sigla */}
+                                      <div className="truncate flex items-center gap-2">
+                                        <span className="text-xs font-semibold text-slate-800">{cargo.descricao}</span>
+                                        <span className="text-[10px] font-mono text-slate-500 uppercase bg-white border border-slate-200 px-1.5 py-0.5 rounded font-bold">
+                                          {cargo.sigla}
+                                        </span>
+                                      </div>
+                                    </div>
+
+                                    {/* Cargo Actions */}
+                                    <div className="flex items-center gap-1 opacity-80 group-hover/cargo:opacity-100 transition-opacity shrink-0">
+                                      <button 
+                                        type="button"
+                                        onClick={() => { 
+                                          setCargoSelectedOrganId(area.idOrgao || selectedStructureOrgan?.id || '');
+                                          setCargoFormData(cargo); 
+                                          setCargoFormError(null);
+                                          setIsNewCargoModalOpen(true); 
+                                        }} 
+                                        title="Editar Cargo"
+                                        className="p-1 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded transition-colors cursor-pointer"
+                                      >
+                                        <Edit2 size={12} />
+                                      </button>
+                                      <button 
+                                        type="button"
+                                        onClick={() => { setCargoToDelete(cargo); setIsConfirmDeleteCargoOpen(true); }} 
+                                        title="Excluir Cargo"
+                                        className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors cursor-pointer"
+                                      >
+                                        <Trash2 size={12} />
+                                      </button>
+                                    </div>
+                                  </div>
+
+                                  {/* Cargo Drop line after */}
+                                  {dragOverCargo?.cargoId === cargo.id && dragOverCargo?.position === 'after' && (
+                                    <div className="flex items-center gap-1.5 py-1">
+                                      <div className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-ping" />
+                                      <div className="h-0.5 bg-blue-500 rounded-full flex-1" />
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+
+                            {/* Empty state inside Area if no cargos */}
+                            {areaCargos.length === 0 && (
+                              <div 
+                                onDragOver={(e) => {
+                                  if (draggedItem?.type === 'cargo') {
+                                    e.preventDefault();
+                                    setDragOverAreaContainerId(area.id);
+                                  }
+                                }}
+                                onDrop={(e) => {
+                                  if (draggedItem?.type === 'cargo') {
+                                    handleCargoDropOnArea(e, area.id);
+                                  }
+                                }}
+                                className={`border-2 border-dashed rounded-xl p-5 text-center transition-all ${
+                                  dragOverAreaContainerId === area.id 
+                                    ? 'border-blue-500 bg-blue-50/80 text-blue-700 shadow-sm' 
+                                    : 'border-slate-200 bg-slate-50/40 text-slate-400'
+                                }`}
+                              >
+                                <Briefcase size={20} className="mx-auto mb-1.5 opacity-40" />
+                                <p className="text-xs font-semibold">Nenhum cargo cadastrado nesta área</p>
+                                <p className="text-[11px] mt-0.5">
+                                  Arraste um cargo aqui para vinculá-lo a esta área, ou{' '}
                                   <button 
+                                    type="button"
                                     onClick={() => { 
                                       setCargoSelectedOrganId(area.idOrgao || selectedStructureOrgan?.id || '');
-                                      setCargoFormData(cargo); 
+                                      setCargoFormData({ id: '', descricao: '', sigla: '', idArea: area.id, gestor: false, idOrgao: area.idOrgao || selectedStructureOrgan?.id || '' }); 
                                       setCargoFormError(null);
                                       setIsNewCargoModalOpen(true); 
-                                    }} 
-                                    className="p-1 text-amber-600 hover:bg-amber-50 rounded"
+                                    }}
+                                    className="text-blue-600 hover:underline font-bold cursor-pointer"
                                   >
-                                    <Edit2 size={12} />
-                                  </button>
-                                  <button onClick={() => { setCargoToDelete(cargo); setIsConfirmDeleteCargoOpen(true); }} className="p-1 text-rose-600 hover:bg-rose-50 rounded"><Trash2 size={12} /></button>
-                               </div>
-                            </div>
-                         ))}
-                         {cargosList.filter(c => c.idArea === area.id).length === 0 && (
-                            <div className="col-span-full py-2 text-center text-slate-300 text-[11px] italic">Sem cargos cadastrados nesta área.</div>
-                         )}
+                                    adicione um novo cargo
+                                  </button>.
+                                </p>
+                              </div>
+                            )}
+
+                            {/* Drop slot at end of area if a cargo from another area is currently dragged */}
+                            {draggedItem?.type === 'cargo' && draggedItem.sourceAreaId !== area.id && areaCargos.length > 0 && (
+                              <div 
+                                onDragOver={(e) => {
+                                  e.preventDefault();
+                                  setDragOverAreaContainerId(area.id);
+                                }}
+                                onDrop={(e) => handleCargoDropOnArea(e, area.id)}
+                                className={`border border-dashed rounded-lg py-2 px-3 text-center text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                                  dragOverAreaContainerId === area.id 
+                                    ? 'border-blue-500 bg-blue-100/60 text-blue-700 font-bold' 
+                                    : 'border-blue-200 bg-blue-50/30 text-blue-600 hover:bg-blue-50'
+                                }`}
+                              >
+                                <ArrowRight size={13} /> Solte aqui para transferir para o final desta área ({area.sigla})
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Area Drop Indicator (After) */}
+                    {dragOverArea?.id === area.id && dragOverArea?.position === 'after' && (
+                      <div className="flex items-center gap-2 py-1.5 animate-pulse">
+                        <div className="w-2.5 h-2.5 rounded-full bg-blue-600 shrink-0 shadow-sm" />
+                        <div className="h-1 bg-gradient-to-r from-blue-600 via-blue-400 to-transparent rounded-full flex-1 shadow-sm" />
+                        <span className="text-[10px] font-bold text-blue-600 uppercase bg-blue-50 px-2 py-0.5 rounded">Mover Área para cá</span>
                       </div>
-                   </div>
-                </div>
-             ))}
-             {areasList.filter(a => a.idOrgao === selectedStructureOrgan?.id).length === 0 && (
-                <div className="py-12 text-center text-slate-300">
-                   <Layers size={48} className="mx-auto mb-4 opacity-10" />
-                   <p className="font-bold">Nenhuma área cadastrada.</p>
-                   <p className="text-xs">Comece adicionando uma área de atuação para este órgão.</p>
-                </div>
-             )}
+                    )}
+                  </div>
+                );
+              });
+            })()}
           </div>
         </div>
       </Modal>
@@ -1832,10 +2938,11 @@ export default function App() {
       <Modal 
         isOpen={isNewAreaModalOpen} 
         onClose={() => { setIsNewAreaModalOpen(false); setAreaFormError(null); }} 
+        onSave={handleSaveArea}
         title={areaFormData.id ? "Editar Área" : "Nova Área de Atuação"} 
         errorMessage={areaFormError}
       >
-         <form className="space-y-4" onSubmit={(e) => e.preventDefault()} onSave={handleSaveArea}>
+         <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); handleSaveArea(); }}>
             <div className="space-y-1.5">
                <label className="text-[11px] font-bold text-slate-500 uppercase">Órgão Vinculado *</label>
                <select 
@@ -1880,10 +2987,11 @@ export default function App() {
           setCargoFormError(null); 
           setCargoSelectedOrganId('');
         }} 
+        onSave={handleSaveCargo}
         title={cargoFormData.id ? "Editar Cargo" : "Novo Cargo Financeiro/Administrativo"} 
         errorMessage={cargoFormError}
       >
-         <form className="space-y-4" onSubmit={(e) => e.preventDefault()} onSave={handleSaveCargo}>
+         <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); handleSaveCargo(); }}>
             {/* Campo de seleção de Órgão acima de Área Relacionada */}
             <div className="space-y-1.5">
                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Órgão *</label>
@@ -1987,41 +3095,41 @@ export default function App() {
       </Modal>
 
       {/* Delete Confirmation Modals */}
-      <Modal isOpen={isConfirmDeleteAreaOpen} onClose={() => setIsConfirmDeleteAreaOpen(false)} title="Excluir Área" actionLabel="Excluir Área">
-         <div className="text-center space-y-4" onSave={() => { setAreasList(prev => prev.filter(a => a.id !== areaToDelete?.id)); setIsConfirmDeleteAreaOpen(false); }}>
+      <Modal 
+        isOpen={isConfirmDeleteAreaOpen} 
+        onClose={() => setIsConfirmDeleteAreaOpen(false)} 
+        onSave={() => { setAreasList(prev => prev.filter(a => a.id !== areaToDelete?.id)); setIsConfirmDeleteAreaOpen(false); }}
+        title="Excluir Área" 
+        actionLabel="Excluir Área"
+      >
+         <div className="text-center space-y-4">
             <div className="w-16 h-16 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mx-auto border border-rose-100"><Trash2 size={32} /></div>
             <p className="text-sm text-slate-600">Deseja realmente excluir a área <span className="font-bold text-slate-900">"{areaToDelete?.descricao}"</span>?</p>
             <p className="text-[10px] text-rose-500 font-bold uppercase italic">Atenção: Todos os cargos vinculados serão desconectados.</p>
          </div>
       </Modal>
 
-      <Modal isOpen={isConfirmDeleteCargoOpen} onClose={() => setIsConfirmDeleteCargoOpen(false)} title="Excluir Cargo" actionLabel="Excluir Cargo">
-         <div className="text-center space-y-4" onSave={() => { setCargosList(prev => prev.filter(c => c.id !== cargoToDelete?.id)); setIsConfirmDeleteCargoOpen(false); }}>
+      <Modal 
+        isOpen={isConfirmDeleteCargoOpen} 
+        onClose={() => setIsConfirmDeleteCargoOpen(false)} 
+        onSave={() => { setCargosList(prev => prev.filter(c => c.id !== cargoToDelete?.id)); setIsConfirmDeleteCargoOpen(false); }}
+        title="Excluir Cargo" 
+        actionLabel="Excluir Cargo"
+      >
+         <div className="text-center space-y-4">
             <div className="w-16 h-16 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mx-auto border border-rose-100"><Trash2 size={32} /></div>
             <p className="text-sm text-slate-600">Deseja realmente excluir o cargo <span className="font-bold text-slate-900">"{cargoToDelete?.descricao}"</span>?</p>
          </div>
       </Modal>
 
-      {/* Modal Deletar Tipo de Órgão */}
-      <Modal 
-        isOpen={isConfirmDeleteTipoOrgaoOpen} 
-        onClose={() => setIsConfirmDeleteTipoOrgaoOpen(false)} 
-        title="Excluir Tipo de Órgão"
-        actionLabel="Excluir Tipo"
-      >
-        <div className="text-center space-y-4" onSave={() => { setTiposOrgaoList(prev => prev.filter(t => t.id !== tipoOrgaoToDelete?.id)); setIsConfirmDeleteTipoOrgaoOpen(false); }}>
-          <div className="w-16 h-16 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mx-auto border border-rose-100"><Trash2 size={32} /></div>
-          <p className="text-sm text-slate-600">Deseja realmente excluir o tipo de órgão <span className="font-bold text-slate-900">"{tipoOrgaoToDelete?.descricao}"</span>?</p>
-        </div>
-      </Modal>
-
       <Modal 
         isOpen={isNewOrganModalOpen} 
         onClose={() => { setIsNewOrganModalOpen(false); setOrganFormError(null); }} 
+        onSave={handleSaveOrgan}
         title={organFormData.id ? "Editar Órgão" : "Cadastro de Novo Órgão"} 
         errorMessage={organFormError}
       >
-        <form className="space-y-6" onSubmit={(e) => e.preventDefault()} onSave={handleSaveOrgan}>
+        <form className="space-y-6" onSubmit={(e) => { e.preventDefault(); handleSaveOrgan(); }}>
           <div className="space-y-4">
             <div className="space-y-1.5">
               <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Descrição do Órgão</label>
@@ -2084,10 +3192,11 @@ export default function App() {
       <Modal 
         isOpen={isConfirmDeleteOpen} 
         onClose={() => setIsConfirmDeleteOpen(false)} 
+        onSave={handleConfirmDelete}
         title="Confirmar Exclusão"
         actionLabel="Excluir Órgão"
       >
-        <div className="space-y-6" onSave={handleConfirmDelete}>
+        <div className="space-y-6">
           <div className="flex flex-col items-center text-center">
             <div className="w-16 h-16 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mb-4 border border-rose-100 shadow-sm">
               <Trash2 size={32} />
@@ -2136,15 +3245,35 @@ export default function App() {
             </div>
             <div className="space-y-4">
               <div>
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Sequência Admin</span>
-                <p className="text-base font-mono font-bold text-slate-900">{selectedOrgan?.sequencia}</p>
-              </div>
-              <div>
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Status Sistema</span>
                 <span className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-black uppercase">Ativo</span>
               </div>
             </div>
           </div>
+
+          {selectedOrgan && (() => {
+            const stats = getOrganStats(selectedOrgan);
+            return (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                <div className="text-center p-3 bg-white rounded-lg border border-slate-100 shadow-sm">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Áreas</span>
+                  <span className="text-xl font-bold text-slate-800">{stats.areas}</span>
+                </div>
+                <div className="text-center p-3 bg-white rounded-lg border border-slate-100 shadow-sm">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Cargos</span>
+                  <span className="text-xl font-bold text-indigo-700">{stats.cargos}</span>
+                </div>
+                <div className="text-center p-3 bg-white rounded-lg border border-slate-100 shadow-sm">
+                  <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider block mb-0.5">Cargos Ocupados</span>
+                  <span className="text-xl font-bold text-emerald-600">{stats.ocupados}</span>
+                </div>
+                <div className="text-center p-3 bg-white rounded-lg border border-slate-100 shadow-sm">
+                  <span className="text-[10px] font-bold text-sky-600 uppercase tracking-wider block mb-0.5">Cargos Livres</span>
+                  <span className="text-xl font-bold text-sky-600">{stats.livres}</span>
+                </div>
+              </div>
+            );
+          })()}
 
           <div className="space-y-4">
             <div className="flex items-center gap-2 pb-2 border-b border-slate-100">

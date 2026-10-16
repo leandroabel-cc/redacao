@@ -1,0 +1,6 @@
+{
+  "name": "SGN - Sistema de Gestão de Nomeações",
+  "description": "Sistema administrativo para gestão de nomeações, exonerações e controle de histórico funcional com trilha de auditoria completa.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
